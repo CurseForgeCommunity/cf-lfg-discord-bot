@@ -1,0 +1,40 @@
+name: Continous integration
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: environment-${{ github.ref }}-ci
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set version
+        id: set-version
+        run: |
+          echo "PACKAGE_VERSION=$(date +'%Y.%m.%d.%H%M')" >> $GITHUB_ENV
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install Octopus CLI
+        run: |
+          sudo apt update && sudo apt install --no-install-recommends gnupg curl ca-certificates apt-transport-https && \
+          curl -sSfL https://apt.octopus.com/public.key | sudo apt-key add - && \
+          sudo sh -c "echo deb https://apt.octopus.com/ stable main > /etc/apt/sources.list.d/octopus.com.list" && \
+          sudo apt update && sudo apt install octopuscli
+
+      - name: Build and package site for publish
+        run: |
+          dotnet publish CF-LFG-Bot.csproj --output published-app --configuration Release -p:FileVersion="$PACKAGE_VERSION" -p:AssemblyVersion="$PACKAGE_VERSION" && \
+          octo pack --id="CF-LFG-Bot" --version="$PACKAGE_VERSION" --basePath="./published-app" --outFolder="./published-app" && \
+          octo push --package="./published-app/CF-LFG-Bot.$PACKAGE_VERSION.nupkg" --server="${{ secrets.OCTOPUS_SERVER_URL }}" --apiKey="${{ secrets.OCTOPUS_API_KEY }}"
