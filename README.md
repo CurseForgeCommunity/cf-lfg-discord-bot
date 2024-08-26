@@ -1,1 +1,1 @@
-# CF-LFG-Bot
+# CurseForge Community LFG Discord Bot
