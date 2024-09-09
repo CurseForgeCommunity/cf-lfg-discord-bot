@@ -11,6 +11,15 @@ namespace CF_LFG_Bot
     {
         private InteractionService _interactionService;
 
+        public List<ulong> ValidCreateChannels = new List<ulong>()
+        {
+            1277688413713334342,
+            1281901450406002751,
+            1281901486611234816,
+            1281901522933776395,
+            1281902255448264707
+        };
+
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             client.ShardReady += Client_ShardReady;
@@ -90,6 +99,54 @@ namespace CF_LFG_Bot
             }
 
             client.InteractionCreated += Client_InteractionCreated;
+
+            client.UserVoiceStateUpdated += async (user, oldState, newState) =>
+            {
+                if (oldState.VoiceChannel != null)
+                {
+
+
+                    if (!ValidCreateChannels.Contains(oldState.VoiceChannel.Id))
+                    {
+                        var voiceChannel = client.GetChannel(oldState.VoiceChannel.Id) as SocketVoiceChannel;
+
+                        if (voiceChannel!.ConnectedUsers.Count == 0)
+                        {
+                            logger.LogInformation("User {User} left voice channel {Channel}, no users left. Removing channel.", user.Username, oldState.VoiceChannel.Name);
+
+                            await oldState.VoiceChannel.DeleteAsync();
+                        }
+                    }
+                }
+
+                if (newState.VoiceChannel != null)
+                {
+                    if (ValidCreateChannels.Contains(newState.VoiceChannel.Id))
+                    {
+                        logger.LogInformation("User {User} entered voice channel {Channel}, creating channel", user.Username, newState.VoiceChannel.Name);
+                        var guild = client.GetGuild(newState.VoiceChannel.Guild.Id);
+
+                        if (guild != null)
+                        {
+                            var category = guild.CategoryChannels.First(x => x.Id == newState.VoiceChannel.CategoryId);
+
+                            var voiceChannelCount = category.Channels.Count(x => x.GetChannelType() == ChannelType.Voice && x.Id != newState.VoiceChannel.Id);
+
+                            var channel = await guild.CreateVoiceChannelAsync($"LFG {voiceChannelCount.ToString().PadLeft(2, '0')}", x =>
+                            {
+                                x.CategoryId = newState.VoiceChannel.CategoryId;
+                                x.UserLimit = 8;
+                                x.ChannelType = ChannelType.Voice;
+                            });
+
+                            await (user as SocketGuildUser)!.ModifyAsync(x =>
+                            {
+                                x.Channel = channel;
+                            });
+                        }
+                    }
+                }
+            };
 
             logger.LogInformation("Slash commands registered");
         }
