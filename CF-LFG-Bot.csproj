@@ -6,7 +6,6 @@
 		<RootNamespace>CF_LFG_Bot</RootNamespace>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<PublishAot>true</PublishAot>
 	</PropertyGroup>
 
 	<ItemGroup>
