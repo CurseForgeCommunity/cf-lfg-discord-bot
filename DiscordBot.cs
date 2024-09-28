@@ -104,8 +104,6 @@ namespace CF_LFG_Bot
             {
                 if (oldState.VoiceChannel != null)
                 {
-
-
                     if (!ValidCreateChannels.Contains(oldState.VoiceChannel.Id))
                     {
                         var voiceChannel = client.GetChannel(oldState.VoiceChannel.Id) as SocketVoiceChannel;
@@ -139,10 +137,23 @@ namespace CF_LFG_Bot
                                 x.ChannelType = ChannelType.Voice;
                             });
 
-                            await (user as SocketGuildUser)!.ModifyAsync(x =>
+                            var guildUser = user as SocketGuildUser;
+
+                            await guildUser!.ModifyAsync(x =>
                             {
                                 x.Channel = channel;
                             });
+
+                            var newPermissions = new OverwritePermissions(
+                                connect: PermValue.Allow,
+                                speak: PermValue.Allow,
+                                stream: PermValue.Allow,
+                                viewChannel: PermValue.Allow,
+                                moveMembers: PermValue.Allow,
+                                useVoiceActivation: PermValue.Allow
+                            );
+
+                            await channel.AddPermissionOverwriteAsync(guildUser, newPermissions);
                         }
                     }
                 }
