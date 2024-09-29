@@ -17,7 +17,8 @@ namespace CF_LFG_Bot
             1281901450406002751,
             1281901486611234816,
             1281901522933776395,
-            1281902255448264707
+            1281902255448264707,
+            1289870525794881628
         };
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
